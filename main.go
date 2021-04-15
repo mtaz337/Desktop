@@ -2,53 +2,80 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"math/rand"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/emamulandalib/airbringr-notification/app"
+	"github.com/emamulandalib/airbringr-notification/config"
 	"github.com/emamulandalib/airbringr-notification/handler"
 	"github.com/emamulandalib/airbringr-notification/route"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
+	log "github.com/sirupsen/logrus"
 )
 
 const idleTimeout = 5 * time.Second
 
+func init() {
+	// log.SetFormatter(&log.JSONFormatter{})
+	log.SetLevel(log.InfoLevel)
+	log.SetReportCaller(true)
+
+	f, err := os.OpenFile("notification.log", os.O_WRONLY|os.O_CREATE, 0755)
+
+	if err != nil {
+		panic(err.Error())
+	}
+
+	log.SetOutput(f)
+}
+
 func main() {
+	config.New()
+	app := app.New()
+	app.Bootstrap()
+	handler := handler.New()
+
 	// setup app
-	app := fiber.New(fiber.Config{
+	server := fiber.New(fiber.Config{
 		IdleTimeout: idleTimeout,
 	})
 
 	// setup middlewares
-	app.Use(requestid.New())
-	app.Use(logger.New(logger.Config{
+	server.Use(requestid.New())
+	server.Use(recover.New())
+
+	server.Use(logger.New(logger.Config{
+		Format:   "[${time}] ${status} ${locals:requestid} - ${latency} ${method} ${path}\n",
 		TimeZone: "Asia/Dhaka",
 	}))
 
 	//routes
-	app.Get("/", handler.Home)
-	route.V1(app)
+	server.Get("/", handler.Home)
+	route.V1(server, handler)
 
 	// 404
-	app.Use(handler.NotFound)
+	server.Use(handler.NotFound)
 
 	// Listen from a different goroutine
 	go func() {
-		if err := app.Listen("0.0.0.0:8080"); err != nil {
-			log.Panic(err)
+		if err := server.Listen(fmt.Sprintf("0.0.0.0:%d", config.Params.Port)); err != nil {
+			log.Error(err.Error())
 		}
 	}()
 
+	rand.Seed(time.Now().UnixNano())
 	c := make(chan os.Signal, 1)                    // Create channel to signify a signal being sent
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM) // When an interrupt or termination signal is sent, notify the channel
 
 	<-c // This blocks the main thread until an interrupt is received
 	fmt.Println("Gracefully shutting down...")
-	_ = app.Shutdown()
+	_ = server.Shutdown()
 
 	fmt.Println("Running cleanup tasks...")
 

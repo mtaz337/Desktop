@@ -1,7 +1,12 @@
 package response
 
-type Success struct {
+var (
+	BodyParseFailedErrorMsg = "Failed to parse the body."
+	ValidationFailedMesaage = "Validation failed."
+)
+
+type Payload struct {
 	Message string       `json:"message"`
 	Data    *interface{} `json:"data"`
-	Errors  []string     `json:"errors"`
+	Errors  error        `json:"errors"`
 }
