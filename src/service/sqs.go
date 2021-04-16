@@ -114,7 +114,7 @@ func (q *Queue) SendMessage(queueName string, sendSmsDto dto.SendSms) error {
 
 func (q *Queue) ReceiveMessagePeriodic(queueName string) {
 	url, err := q.GetUrl(queueName)
-	smsService := SmsService{}
+	// smsService := SmsService{}
 
 	if err != nil {
 		panic(err.Error())
@@ -125,11 +125,12 @@ func (q *Queue) ReceiveMessagePeriodic(queueName string) {
 
 	for {
 		<-ticker.C
-		fmt.Println("Receiving...")
 		msgs := q.ReceiveMessage(*url)
 
 		for _, msg := range msgs {
-			go smsService.Send(msg)
+			fmt.Println(msg)
+			q.DeleteMessage(msg)
+			// go smsService.Send(msg)
 		}
 	}
 }

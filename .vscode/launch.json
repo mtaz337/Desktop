@@ -9,7 +9,7 @@
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            "program": "${workspaceFolder}",
+            "program": "${workspaceFolder}/src",
             "env": {
                 "NOTIFICATION_PORT": 8080,
                 "NOTIFICATION_AWSREGION": "ap-southeast-1",

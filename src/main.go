@@ -25,14 +25,6 @@ func init() {
 	// log.SetFormatter(&log.JSONFormatter{})
 	log.SetLevel(log.InfoLevel)
 	log.SetReportCaller(true)
-
-	f, err := os.OpenFile("notification.log", os.O_WRONLY|os.O_CREATE, 0755)
-
-	if err != nil {
-		panic(err.Error())
-	}
-
-	log.SetOutput(f)
 }
 
 func main() {
@@ -65,7 +57,7 @@ func main() {
 	// Listen from a different goroutine
 	go func() {
 		if err := server.Listen(fmt.Sprintf("0.0.0.0:%d", config.Params.Port)); err != nil {
-			log.Error(err.Error())
+			log.Fatal(err.Error())
 		}
 	}()
 
