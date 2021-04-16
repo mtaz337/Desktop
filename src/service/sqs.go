@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -12,11 +11,21 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var (
+	Sess *session.Session
+)
+
 type Queue struct {
 	Sess session.Session
 }
 
 func NewQueue() (*Queue, error) {
+	if Sess != nil {
+		return &Queue{Sess: *Sess}, nil
+	}
+
+	log.Info("New Session")
+
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(config.Params.AwsRegion),
 	})
@@ -25,6 +34,7 @@ func NewQueue() (*Queue, error) {
 		return nil, err
 	}
 
+	Sess = sess
 	return &Queue{Sess: *sess}, nil
 }
 
@@ -114,7 +124,7 @@ func (q *Queue) SendMessage(queueName string, sendSmsDto dto.SendSms) error {
 
 func (q *Queue) ReceiveMessagePeriodic(queueName string) {
 	url, err := q.GetUrl(queueName)
-	// smsService := SmsService{}
+	smsService := SmsService{}
 
 	if err != nil {
 		panic(err.Error())
@@ -128,9 +138,7 @@ func (q *Queue) ReceiveMessagePeriodic(queueName string) {
 		msgs := q.ReceiveMessage(*url)
 
 		for _, msg := range msgs {
-			fmt.Println(msg)
-			q.DeleteMessage(msg)
-			// go smsService.Send(msg)
+			go smsService.Send(msg)
 		}
 	}
 }

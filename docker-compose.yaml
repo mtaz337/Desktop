@@ -7,15 +7,10 @@ services:
         ports: 
             - 8080:8080
         env_file: .env
-        # logging:
-        #     driver: awslogs
-        #     options:
-        #         awslogs-region: ap-southeast-1
-        #         awslogs-group: notification
-        #         awslogs-create-group: "true"
-        #         awslogs-multiline-pattern: '^time='
-# networks:                                
-#     default:                               
-#         driver: bridge                       
-#         driver_opts:                         
-#             com.docker.network.driver.mtu: 9001
+        logging:
+            driver: awslogs
+            options:
+                awslogs-region: ap-southeast-1
+                awslogs-group: notification
+                awslogs-create-group: "true"
+                awslogs-multiline-pattern: '^time='
