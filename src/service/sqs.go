@@ -24,7 +24,7 @@ func NewQueue() (*Queue, error) {
 		return &Queue{Sess: *Sess}, nil
 	}
 
-	log.Info("New Session")
+	log.Info("New Session should be single.")
 
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(config.Params.AwsRegion),
@@ -127,7 +127,7 @@ func (q *Queue) ReceiveMessagePeriodic(queueName string) {
 	smsService := SmsService{}
 
 	if err != nil {
-		panic(err.Error())
+		log.Panic(err.Error())
 	}
 
 	ticker := time.NewTicker(time.Second)
@@ -154,7 +154,7 @@ func (q *Queue) ReceiveMessage(url string) []*sqs.Message {
 	})
 
 	if err != nil {
-		log.Println(err.Error())
+		log.Error(err.Error())
 	}
 
 	return res.Messages
@@ -166,7 +166,7 @@ func (q *Queue) DeleteMessage(msg *sqs.Message) {
 	url, err := q.GetUrl(config.Params.SmsQueueName)
 
 	if err != nil {
-		log.Println(err.Error())
+		log.Error(err.Error())
 		return
 	}
 
