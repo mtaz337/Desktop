@@ -156,10 +156,10 @@ func (q *Queue) ReceiveMessage(name string) []*sqs.Message {
 	return res.Messages
 }
 
-func (q *Queue) DeleteMessage(msg *sqs.Message) {
+func (q *Queue) DeleteMessage(name string, msg *sqs.Message) {
 	svc := q.svc()
 
-	url, err := q.GetUrl(config.Params.SmsQueueName)
+	url, err := q.GetUrl(name)
 
 	if err != nil {
 		log.Error(err.Error())

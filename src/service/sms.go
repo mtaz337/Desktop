@@ -89,7 +89,7 @@ func (svc *SmsService) Send(msg *sqs.Message) {
 		}).Info("Delivery success.")
 
 		q, _ := NewQueue()
-		q.DeleteMessage(msg)
+		q.DeleteMessage(config.Params.SmsQueueName, msg)
 	} else {
 		log.WithFields(log.Fields{
 			"number":           number,

@@ -32,14 +32,6 @@ func (svc *EmailService) EnQueue(sendEmail *dto.SendEmail) error {
 			DataType:    aws.String("String"),
 			StringValue: aws.String(sendEmail.To),
 		},
-		"CC": {
-			DataType:    aws.String("String"),
-			StringValue: aws.String(*sendEmail.CC),
-		},
-		"BCC": {
-			DataType:    aws.String("String"),
-			StringValue: aws.String(*sendEmail.BCC),
-		},
 		"Subject": {
 			DataType:    aws.String("String"),
 			StringValue: aws.String(sendEmail.Subject),
@@ -52,6 +44,20 @@ func (svc *EmailService) EnQueue(sendEmail *dto.SendEmail) error {
 			DataType:    aws.String("String"),
 			StringValue: aws.String(string(data)),
 		},
+	}
+
+	if sendEmail.CC != nil {
+		msgAttrs["CC"] = &sqs.MessageAttributeValue{
+			DataType:    aws.String("String"),
+			StringValue: aws.String(*sendEmail.CC),
+		}
+	}
+
+	if sendEmail.BCC != nil {
+		msgAttrs["BCC"] = &sqs.MessageAttributeValue{
+			DataType:    aws.String("String"),
+			StringValue: aws.String(*sendEmail.BCC),
+		}
 	}
 
 	err = queue.SendMessage(config.Params.EmailQueueName, "sendEmail", message, msgAttrs)
@@ -112,6 +118,9 @@ func (svc *EmailService) Send(msg *sqs.Message) {
 		log.Error(err.Error())
 		return
 	}
+
+	q, _ := NewQueue()
+	q.DeleteMessage(config.Params.EmailQueueName, msg)
 }
 
 func (svc *EmailService) ReceiveMessagePeriodic(queueName string) {
