@@ -1,8 +1,13 @@
 package service
 
 import (
+	"github.com/aws/aws-sdk-go/aws/session"
 	"math/rand"
 	"strings"
+)
+
+var (
+	Sess *session.Session
 )
 
 func (q *Queue) randString() string {

@@ -11,24 +11,33 @@ func (app *App) Bootstrap() {
 }
 
 func (app *App) createQueueOrFail() {
+	smsSvc := service.SmsService{}
+	emailSvc := service.EmailService{}
+
 	smsQueueName := config.Params.SmsQueueName
+	emailQueueName := config.Params.EmailQueueName
+
+	createQueue(smsQueueName)
+	createQueue(emailQueueName)
+
+	go smsSvc.ReceiveMessagePeriodic(smsQueueName)
+	go emailSvc.ReceiveMessagePeriodic(emailQueueName)
+}
+
+func createQueue(name string) {
 	queue, err := service.NewQueue()
 
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	_, err = queue.GetUrl(smsQueueName)
+	_, err = queue.GetUrl(name)
 
-	if err != nil {
-		createQueue(queue, smsQueueName)
+	if err == nil {
+		return
 	}
 
-	go queue.ReceiveMessagePeriodic(smsQueueName)
-}
-
-func createQueue(queue *service.Queue, name string) {
-	err := queue.Create(name)
+	err = queue.Create(name)
 
 	if err != nil {
 		log.Fatal(err.Error())

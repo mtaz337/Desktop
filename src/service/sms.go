@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/emamulandalib/airbringr-notification/config"
@@ -26,7 +28,13 @@ func (svc *SmsService) EnQueue(sendSmsDto *dto.SendSms) error {
 		return err
 	}
 
-	err = queue.SendMessage(config.Params.SmsQueueName, *sendSmsDto)
+	msgAttrs := map[string]*sqs.MessageAttributeValue{
+		"Number": {
+			DataType:    aws.String("String"),
+			StringValue: aws.String(sendSmsDto.Number),
+		},
+	}
+	err = queue.SendMessage(config.Params.SmsQueueName, "sendSms", message, msgAttrs)
 
 	if err != nil {
 		return err
@@ -36,11 +44,11 @@ func (svc *SmsService) EnQueue(sendSmsDto *dto.SendSms) error {
 }
 
 func (svc *SmsService) Send(msg *sqs.Message) {
-	externalSrvcUrl := config.Params.SmsExternalServiceUrl
+	externalSvcUrl := config.Params.SmsExternalServiceUrl
 	msgBody := *msg.Body
-	nmbr := *msg.MessageAttributes["Number"].StringValue
-	url := fmt.Sprintf("%s%s&Message=%s", externalSrvcUrl, nmbr, msgBody)
-	res, err := http.Get(url)
+	number := *msg.MessageAttributes["Number"].StringValue
+	urlWithMsg := fmt.Sprintf("%s%s&Message=%s", externalSvcUrl, number, msgBody)
+	res, err := http.Get(urlWithMsg)
 
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to sent: %s", err.Error())
@@ -64,19 +72,19 @@ func (svc *SmsService) Send(msg *sqs.Message) {
 	}
 
 	data, err := io.ReadAll(res.Body)
-	res.Body.Close()
+	_ = res.Body.Close()
 
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	xml.NewDecoder(bytes.NewReader(data)).Decode(&xmlResp)
+	_ = xml.NewDecoder(bytes.NewReader(data)).Decode(&xmlResp)
 
 	if xmlResp.ServiceClass.StatusText == "success" {
 		log.WithFields(log.Fields{
-			"number":           nmbr,
-			"url":              url,
+			"number":           number,
+			"urlWithMsg":       urlWithMsg,
 			"gateway_response": string(data),
 		}).Info("Delivery success.")
 
@@ -84,9 +92,29 @@ func (svc *SmsService) Send(msg *sqs.Message) {
 		q.DeleteMessage(msg)
 	} else {
 		log.WithFields(log.Fields{
-			"number":           nmbr,
-			"url":              url,
+			"number":           number,
+			"urlWithMsg":       urlWithMsg,
 			"gateway_response": string(data),
 		}).Error("Delivery failed.")
+	}
+}
+
+func (svc *SmsService) ReceiveMessagePeriodic(queueName string) {
+	q, err := NewQueue()
+
+	if err != nil {
+		log.Panic(err.Error())
+	}
+
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for {
+		<-ticker.C
+		messages := q.ReceiveMessage(queueName)
+
+		for _, msg := range messages {
+			go svc.Send(msg)
+		}
 	}
 }

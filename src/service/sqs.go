@@ -7,12 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/emamulandalib/airbringr-notification/config"
-	"github.com/emamulandalib/airbringr-notification/dto"
 	log "github.com/sirupsen/logrus"
-)
-
-var (
-	Sess *session.Session
 )
 
 type Queue struct {
@@ -93,25 +88,20 @@ func (q *Queue) Create(name string) error {
 	return nil
 }
 
-func (q *Queue) SendMessage(queueName string, sendSmsDto dto.SendSms) error {
+func (q *Queue) SendMessage(name string, groupID string, msgBody string, msgAttrs map[string]*sqs.MessageAttributeValue) error {
 	svc := q.svc()
-	url, err := q.GetUrl(queueName)
+	url, err := q.GetUrl(name)
 
 	if err != nil {
 		return err
 	}
 
 	_, err = svc.SendMessage(&sqs.SendMessageInput{
-		MessageGroupId:         aws.String("sendSms"),
+		MessageGroupId:         aws.String(groupID),
 		MessageDeduplicationId: aws.String(q.randString()),
-		MessageAttributes: map[string]*sqs.MessageAttributeValue{
-			"Number": {
-				DataType:    aws.String("String"),
-				StringValue: aws.String(sendSmsDto.Number),
-			},
-		},
-		MessageBody: aws.String(sendSmsDto.Message),
-		QueueUrl:    url,
+		MessageAttributes:      msgAttrs,
+		MessageBody:            aws.String(msgBody),
+		QueueUrl:               url,
 	})
 
 	if err != nil {
@@ -122,8 +112,8 @@ func (q *Queue) SendMessage(queueName string, sendSmsDto dto.SendSms) error {
 	return nil
 }
 
-func (q *Queue) ReceiveMessagePeriodic(queueName string) {
-	url, err := q.GetUrl(queueName)
+func (q *Queue) ReceiveMessagePeriodic(name string) {
+	url, err := q.GetUrl(name)
 	smsService := SmsService{}
 
 	if err != nil {
@@ -143,10 +133,16 @@ func (q *Queue) ReceiveMessagePeriodic(queueName string) {
 	}
 }
 
-func (q *Queue) ReceiveMessage(url string) []*sqs.Message {
+func (q *Queue) ReceiveMessage(name string) []*sqs.Message {
+	url, err := q.GetUrl(name)
+
+	if err != nil {
+		log.Panic(err.Error())
+	}
+
 	svc := q.svc()
 	res, err := svc.ReceiveMessage(&sqs.ReceiveMessageInput{
-		QueueUrl:            &url,
+		QueueUrl:            url,
 		MaxNumberOfMessages: aws.Int64(10),
 		MessageAttributeNames: []*string{
 			aws.String(sqs.QueueAttributeNameAll),
@@ -170,8 +166,12 @@ func (q *Queue) DeleteMessage(msg *sqs.Message) {
 		return
 	}
 
-	svc.DeleteMessage(&sqs.DeleteMessageInput{
+	_, err = svc.DeleteMessage(&sqs.DeleteMessageInput{
 		QueueUrl:      url,
 		ReceiptHandle: msg.ReceiptHandle,
 	})
+
+	if err != nil {
+		log.Error(err.Error())
+	}
 }

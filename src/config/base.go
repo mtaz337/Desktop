@@ -13,6 +13,7 @@ type Config struct {
 	Port                  int    `required:"true"`
 	AwsRegion             string `required:"true"`
 	SmsQueueName          string `required:"true"`
+	EmailQueueName        string `required:"true"`
 	SmsExternalServiceUrl string `required:"true"`
 }
 
