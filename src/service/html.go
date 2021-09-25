@@ -16,7 +16,7 @@ var (
 		<title>AirBringr</title>
 	</head>
 	<body>
-		This is your OTP {{.OTP}}
+		This is your OTP {{.otp}}
 	</body>
 </html>`,
 	}
