@@ -8,7 +8,7 @@ import (
 
 var (
 	emailTemples = map[string]string{
-		"OTP": `
+		"otp": `
 <!DOCTYPE html>
 <html>
 	<head>
