@@ -19,6 +19,23 @@ var (
 		This is your OTP {{.otp}}
 	</body>
 </html>`,
+
+		"signup_verification": `
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>AirBringr Email Verification</title>
+	</head>
+	<body>
+		Hello,
+		<br>
+		To verify your account please click the link below:
+		<br>
+		{{.link}}
+	</body>
+</html>
+`,
 	}
 )
 
