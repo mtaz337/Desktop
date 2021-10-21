@@ -15,6 +15,7 @@ type Config struct {
 	SmsQueueName          string `required:"true"`
 	EmailQueueName        string `required:"true"`
 	SmsExternalServiceUrl string `required:"true"`
+	MicroAPIToken         string `required:"true"`
 }
 
 func New() {

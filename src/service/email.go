@@ -2,13 +2,14 @@ package service
 
 import (
 	"encoding/json"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ses"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/emamulandalib/airbringr-notification/config"
 	"github.com/emamulandalib/airbringr-notification/dto"
+	"github.com/micro/services/clients/go/email"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 type EmailService struct{}
@@ -75,7 +76,6 @@ func (svc *EmailService) Send(msg *sqs.Message) {
 	subject := *msg.MessageAttributes["Subject"].StringValue
 	tmplCode := *msg.MessageAttributes["TemplateCode"].StringValue
 	data := *msg.MessageAttributes["Data"].StringValue
-	charset := "UTF-8"
 
 	var tmplData interface{}
 	_ = json.Unmarshal([]byte(data), &tmplData)
@@ -86,35 +86,15 @@ func (svc *EmailService) Send(msg *sqs.Message) {
 		return
 	}
 
-	input := &ses.SendEmailInput{
-		Destination: &ses.Destination{
-			ToAddresses: []*string{aws.String(to)},
-		},
-		Message: &ses.Message{
-			Body: &ses.Body{
-				Html: &ses.Content{
-					Charset: aws.String(charset),
-					Data:    aws.String(html),
-				},
-			},
-			Subject: &ses.Content{
-				Charset: aws.String(charset),
-				Data:    aws.String(subject),
-			},
-		},
-		Source: aws.String(from),
+	emailSvc := email.NewEmailService(config.Params.MicroAPIToken)
+	emailRequest := email.SendRequest{
+		To:       to,
+		From:     from,
+		Subject:  subject,
+		HtmlBody: html,
 	}
 
-	sesSvc, err := NewSES()
-
-	if err != nil {
-		log.Error(err.Error())
-		return
-	}
-
-	_, err = sesSvc.SendEmail(input)
-
-	if err != nil {
+	if _, err = emailSvc.Send(&emailRequest); err != nil {
 		log.Error(err.Error())
 		return
 	}
