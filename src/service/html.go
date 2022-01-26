@@ -2,8 +2,9 @@ package service
 
 import (
 	"bytes"
-	log "github.com/sirupsen/logrus"
 	"html/template"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -30,7 +31,7 @@ var (
 	<body>
 		Hello,
 		<br>
-		To verify your account please click the link below:
+		To verify your account please click the link below. <strong>This verification link will be valid for 3 days.</strong>
 		<br>
 		{{.link}}
 	</body>
@@ -39,16 +40,18 @@ var (
 	}
 )
 
-func GenerateTpl(tplCode string, data interface{}) (string, error) {
+func GenerateTpl(tplCode string, data interface{}) (htmlStr string, err error) {
+	var t *template.Template
 	tmpl := emailTemples[tplCode]
-	t, err := template.New("email").Parse(tmpl)
-
-	if err != nil {
+	if t, err = template.New("email").Parse(tmpl); err != nil {
 		log.Error(err.Error())
 		return "", err
 	}
 
 	var html bytes.Buffer
-	err = t.Execute(&html, data)
+	if err = t.Execute(&html, data); err != nil {
+		log.Error(err.Error())
+		return "", err
+	}
 	return html.String(), nil
 }
