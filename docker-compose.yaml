@@ -1,0 +1,17 @@
+version: "3.3"
+
+services:
+    server:
+        build: .
+        container_name: notification
+        ports: 
+            - 80:8080
+        env_file: .env
+        restart: always
+        logging:
+            driver: awslogs
+            options:
+                awslogs-region: ap-southeast-1
+                awslogs-group: notification
+                awslogs-create-group: "true"
+                awslogs-multiline-pattern: '^time='
