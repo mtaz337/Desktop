@@ -42,7 +42,7 @@ var (
 <html>
 	<head>
 		<meta charset="UTF-8">
-		<title>AirBringr Email Verification</title>
+		<title>AirBringr Password Reset</title>
 	</head>
 	<body>
 		Hello,
@@ -50,6 +50,21 @@ var (
 		To reset your password please click the link below.
 		<br>
 		{{.link}}
+	</body>
+</html>
+`,
+
+		"password_reset_confirmation": `
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>AirBringr Password Reset Confirmation</title>
+	</head>
+	<body>
+		Hello,
+		<br>
+		Your password has been updated successfully.
 	</body>
 </html>
 `,
